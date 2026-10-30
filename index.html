@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto Digital Docente</title>
+<!--
+  =====================================================================
+   RETO DIGITAL DOCENTE
+   Pantallas, redes sociales e inteligencia artificial
+   Hecho por Ing. Richie
+   ---------------------------------------------------------------------
+   Juego educativo para el Consejo Técnico Escolar (CTE).
+   - Un solo archivo (HTML + CSS + JavaScript).
+   - Funciona sin conexión a internet.
+   - Guarda el ranking en el navegador con localStorage.
+  =====================================================================
+-->
+<style>
+  /* ===================== VARIABLES DE COLOR ===================== */
+  :root{
+    --bg1:#070b1f;          /* azul muy oscuro */
+    --bg2:#16123f;          /* morado oscuro */
+    --card:rgba(255,255,255,.06);
+    --card-border:rgba(0,212,255,.25);
+    --electric:#00d4ff;     /* azul eléctrico */
+    --purple:#8b5cf6;       /* morado */
+    --purple2:#c084fc;
+    --text:#eef2ff;
+    --muted:#a5b4fc;
+    --ok:#22c55e;
+    --bad:#ef4444;
+    --warn:#f59e0b;
+    --gold:#fbbf24; --silver:#cbd5e1; --bronze:#d97706;
+    --radius:18px;
+  }
+
+  /* ===================== BASE ===================== */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    color:var(--text);
+    background:radial-gradient(circle at 15% 20%,#2a1b6b 0%,transparent 45%),
+               radial-gradient(circle at 85% 80%,#063a5c 0%,transparent 45%),
+               linear-gradient(135deg,var(--bg1),var(--bg2));
+    background-attachment:fixed;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  /* Cuadrícula tecnológica de fondo */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(0,212,255,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(0,212,255,.06) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at center,#000 30%,transparent 80%);
+  }
+  /* Orbes luminosos animados */
+  .orb{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;animation:float 12s ease-in-out infinite}
+  .orb.o1{width:280px;height:280px;background:var(--purple);top:-60px;left:-60px}
+  .orb.o2{width:320px;height:320px;background:var(--electric);bottom:-90px;right:-80px;animation-delay:-6s}
+  @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,30px)}}
+
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:24px 16px 40px}
+
+  /* ===================== PANTALLAS ===================== */
+  .screen{display:none;animation:fadeIn .45s ease}
+  .screen.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  /* ===================== TARJETAS ===================== */
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius);
+    padding:28px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 10px 40px rgba(0,0,0,.35),inset 0 0 30px rgba(139,92,246,.08);
+  }
+
+  /* ===================== TÍTULOS ===================== */
+  .author{
+    display:inline-block;margin-bottom:14px;padding:6px 16px;border-radius:999px;
+    background:linear-gradient(90deg,rgba(139,92,246,.3),rgba(0,212,255,.3));
+    border:1px solid var(--electric);font-weight:700;letter-spacing:.5px;font-size:.95rem;
+  }
+  .hero{text-align:center}
+  .hero .logo{font-size:4rem;animation:pulse 2.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  h1.title{
+    font-size:clamp(2rem,6vw,3.4rem);font-weight:900;letter-spacing:1px;line-height:1.1;margin:8px 0;
+    background:linear-gradient(90deg,var(--electric),var(--purple2),var(--electric));
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 5s linear infinite;
+  }
+  @keyframes shine{to{background-position:200% center}}
+  .subtitle{font-size:clamp(1rem,2.6vw,1.3rem);color:var(--muted);margin-bottom:22px}
+  h2{font-size:clamp(1.4rem,4vw,2rem);margin-bottom:16px;color:var(--electric)}
+
+  /* ===================== INSTRUCCIONES ===================== */
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:22px 0;text-align:left}
+  .rule{background:rgba(0,0,0,.25);border:1px solid rgba(139,92,246,.35);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+  .rule .ic{font-size:1.7rem}
+  .rule b{color:var(--electric)}
+  .blocks{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:8px}
+  .chip{padding:6px 14px;border-radius:999px;font-size:.9rem;font-weight:600;border:1px solid;background:rgba(0,0,0,.25)}
+  .chip.b1{border-color:#38bdf8;color:#7dd3fc}
+  .chip.b2{border-color:#c084fc;color:#d8b4fe}
+  .chip.b3{border-color:#22d3ee;color:#67e8f9}
+
+  /* ===================== BOTONES ===================== */
+  .btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:20px}
+  .btn{
+    font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer;border:none;border-radius:14px;
+    padding:14px 26px;color:#fff;display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg,var(--purple),#5b21b6);
+    box-shadow:0 6px 20px rgba(139,92,246,.4);transition:transform .15s,box-shadow .15s,filter .15s;
+  }
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn.primary{background:linear-gradient(135deg,var(--electric),#0369a1);box-shadow:0 6px 20px rgba(0,212,255,.4)}
+  .btn.big{font-size:1.25rem;padding:18px 40px}
+  .btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);box-shadow:none}
+  .btn.danger{background:linear-gradient(135deg,#ef4444,#991b1b);box-shadow:0 6px 20px rgba(239,68,68,.35)}
+  .btn.success{background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 6px 20px rgba(34,197,94,.35)}
+
+  /* ===================== BARRA SUPERIOR DEL JUEGO ===================== */
+  .hud{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .hud .box{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:10px 12px;text-align:center}
+  .hud .lbl{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .hud .val{font-size:1.5rem;font-weight:800}
+  #timer.low{color:var(--bad);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.4}}
+  .progress{height:12px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:18px;border:1px solid rgba(0,212,255,.2)}
+  .progress .fill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--electric));transition:width .5s ease;box-shadow:0 0 12px var(--electric)}
+
+  /* ===================== PREGUNTA Y OPCIONES ===================== */
+  .q-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .q-text{font-size:clamp(1.2rem,3.2vw,1.7rem);font-weight:700;line-height:1.35;margin-bottom:20px}
+  .options{display:grid;gap:12px}
+  .opt{
+    font:inherit;text-align:left;cursor:pointer;width:100%;color:var(--text);
+    background:rgba(0,0,0,.28);border:2px solid rgba(139,92,246,.4);border-radius:14px;
+    padding:15px 16px;font-size:clamp(1rem,2.4vw,1.15rem);display:flex;gap:14px;align-items:center;
+    transition:border-color .2s,background .2s,transform .15s;
+  }
+  .opt:hover:not(:disabled){border-color:var(--electric);background:rgba(0,212,255,.1);transform:translateX(4px)}
+  .opt .letter{flex:0 0 38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,var(--purple),var(--electric))}
+  .opt:disabled{cursor:default}
+  .opt.correct{border-color:var(--ok);background:rgba(34,197,94,.18)}
+  .opt.correct .letter{background:var(--ok)}
+  .opt.wrong{border-color:var(--bad);background:rgba(239,68,68,.18);animation:shake .4s}
+  .opt.wrong .letter{background:var(--bad)}
+  .opt.dim{opacity:.5}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  .feedback{display:none;margin-top:18px;padding:16px 18px;border-radius:14px;border-left:6px solid;animation:fadeIn .35s}
+  .feedback.show{display:block}
+  .feedback.ok{background:rgba(34,197,94,.12);border-color:var(--ok)}
+  .feedback.bad{background:rgba(239,68,68,.12);border-color:var(--bad)}
+  .feedback .fb-title{font-weight:800;font-size:1.2rem;margin-bottom:6px}
+  .feedback .fb-exp{line-height:1.5;color:#e0e7ff}
+  #nextBtn{display:none}
+
+  /* ===================== RESULTADOS ===================== */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
+  .stat{background:rgba(0,0,0,.28);border:1px solid var(--card-border);border-radius:14px;padding:16px;text-align:center}
+  .stat .n{font-size:2rem;font-weight:900}
+  .stat .t{color:var(--muted);font-size:.9rem}
+  .stat.score .n{color:var(--electric)}
+  .stat.good .n{color:var(--ok)}
+  .stat.bad .n{color:var(--bad)}
+  .stat.pct .n{color:var(--purple2)}
+  .motiv{font-size:1.15rem;line-height:1.5;text-align:center;padding:16px;border-radius:14px;background:linear-gradient(90deg,rgba(139,92,246,.2),rgba(0,212,255,.2));margin-bottom:18px}
+  .timeout-msg{display:none;text-align:center;color:var(--warn);font-weight:700;font-size:1.15rem;margin-bottom:10px}
+  .register{background:rgba(0,0,0,.25);border:1px dashed var(--electric);border-radius:14px;padding:18px}
+  .register label{display:block;font-weight:700;margin-bottom:8px}
+  .register input{
+    width:100%;font:inherit;font-size:1.1rem;padding:14px 16px;border-radius:12px;
+    border:2px solid rgba(139,92,246,.5);background:rgba(0,0,0,.35);color:#fff;outline:none;
+  }
+  .register input:focus{border-color:var(--electric);box-shadow:0 0 0 3px rgba(0,212,255,.2)}
+  .register input.error{border-color:var(--bad)}
+  .err{color:#fca5a5;font-size:.92rem;margin-top:6px;min-height:1.2em}
+  .saved-note{display:none;color:var(--ok);font-weight:700;text-align:center;margin-top:10px}
+
+  /* ===================== RANKING ===================== */
+  .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--card-border)}
+  table{width:100%;border-collapse:collapse;min-width:560px}
+  th,td{padding:12px 10px;text-align:left}
+  th{background:rgba(139,92,246,.3);font-size:.85rem;text-transform:uppercase;letter-spacing:1px}
+  tbody tr{border-top:1px solid rgba(255,255,255,.08)}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
+  tr.r1{background:linear-gradient(90deg,rgba(251,191,36,.25),transparent)!important}
+  tr.r2{background:linear-gradient(90deg,rgba(203,213,225,.2),transparent)!important}
+  tr.r3{background:linear-gradient(90deg,rgba(217,119,6,.22),transparent)!important}
+  tr.me td{outline:2px solid var(--electric);outline-offset:-2px}
+  .pos{font-weight:900;font-size:1.15rem;white-space:nowrap}
+  .medal{font-size:1.6rem}
+  .empty{text-align:center;padding:30px;color:var(--muted)}
+  .tiebreak{font-size:.85rem;color:var(--muted);margin-top:10px;text-align:center}
+
+  /* ===================== REFLEXIÓN ===================== */
+  .reflect{text-align:center}
+  .reflect .big-q{font-size:clamp(1.3rem,3.6vw,2rem);font-weight:800;line-height:1.4;margin:18px 0 26px;
+    padding:24px;border-radius:16px;border:1px solid var(--purple);background:rgba(139,92,246,.12)}
+  .reflect .final{font-size:clamp(1.1rem,3vw,1.5rem);line-height:1.5;color:var(--electric);font-style:italic;font-weight:600}
+
+  /* ===================== MODAL DE CONFIRMACIÓN ===================== */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.show{display:flex}
+  .modal .card{max-width:440px;text-align:center;animation:fadeIn .3s}
+  .modal p{margin:12px 0 4px;line-height:1.5}
+
+  /* ===================== NOTIFICACIÓN ===================== */
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);
+    background:#111827;border:1px solid var(--electric);padding:12px 20px;border-radius:12px;z-index:60;
+    transition:transform .35s;max-width:90vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:26px}
+
+  /* ===================== RESPONSIVO ===================== */
+  @media (max-width:600px){
+    .card{padding:18px}
+    .hud .val{font-size:1.2rem}
+    .btn{width:100%;justify-content:center}
+    .btn.big{padding:16px 20px}
+  }
+  /* Proyector / pantallas grandes */
+  @media (min-width:1400px){ .wrap{max-width:1100px} }
+</style>
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div>
+
+<div class="wrap">
+
+  <!-- ============================================================
+       PANTALLA 1: INICIO E INSTRUCCIONES
+       ============================================================ -->
+  <section id="screen-start" class="screen active">
+    <div class="card hero">
+      <div class="author">⚙️ Hecho por Ing. Richie</div>
+      <div class="logo">🎓💻🤖</div>
+      <h1 class="title">RETO DIGITAL DOCENTE</h1>
+      <p class="subtitle">Pantallas, redes sociales e inteligencia artificial</p>
+
+      <div class="blocks">
+        <span class="chip b1">📱 Bloque 1: Uso de pantallas</span>
+        <span class="chip b2">🌐 Bloque 2: Redes sociales</span>
+        <span class="chip b3">🤖 Bloque 3: Inteligencia artificial</span>
+      </div>
+
+      <div class="rules">
+        <div class="rule"><span class="ic">❓</span><div><b>15 preguntas</b> de opción múltiple elegidas al azar (5 de cada bloque).</div></div>
+        <div class="rule"><span class="ic">⏱️</span><div>Tienes <b>5 minutos</b> en total. Al agotarse el tiempo, el juego termina.</div></div>
+        <div class="rule"><span class="ic">⭐</span><div>Cada respuesta correcta vale <b>100 puntos</b>. Las incorrectas no suman.</div></div>
+        <div class="rule"><span class="ic">💡</span><div>Después de cada respuesta verás una <b>explicación educativa</b>.</div></div>
+        <div class="rule"><span class="ic">🏆</span><div>Al final registra tu nombre y entra al <b>TOP 10</b>. En empate gana quien terminó en menos tiempo.</div></div>
+      </div>
+
+      <div class="btns">
+        <button class="btn primary big" id="startBtn">🚀 Comenzar reto</button>
+        <button class="btn ghost" id="rankingFromStart">🏆 Ver ranking</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PANTALLA 2: JUEGO
+       ============================================================ -->
+  <section id="screen-game" class="screen">
+    <div class="hud">
+      <div class="box"><div class="lbl">Pregunta</div><div class="val" id="qCounter">1 de 15</div></div>
+      <div class="box"><div class="lbl">⏱️ Tiempo</div><div class="val" id="timer">05:00</div></div>
+      <div class="box"><div class="lbl">⭐ Puntos</div><div class="val" id="scoreLive">0</div></div>
+    </div>
+    <div class="progress"><div class="fill" id="progressFill"></div></div>
+
+    <div class="card">
+      <div class="q-head">
+        <span class="chip" id="qBlock">Bloque</span>
+        <span class="chip" id="qTopic" style="border-color:rgba(255,255,255,.3);color:#e0e7ff">Tema</span>
+      </div>
+      <div class="q-text" id="qText">Pregunta</div>
+      <div class="options" id="options"></div>
+
+      <div class="feedback" id="feedback">
+        <div class="fb-title" id="fbTitle"></div>
+        <div class="fb-exp" id="fbExp"></div>
+      </div>
+
+      <div class="btns">
+        <button class="btn primary" id="nextBtn">Siguiente pregunta ➜</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PANTALLA 3: RESULTADOS Y REGISTRO
+       ============================================================ -->
+  <section id="screen-results" class="screen">
+    <div class="card">
+      <div style="text-align:center">
+        <div class="logo" style="font-size:3rem" id="resultIcon">🏁</div>
+        <h1 class="title" style="font-size:clamp(1.6rem,5vw,2.6rem)">RETO DIGITAL DOCENTE</h1>
+        <p class="subtitle" style="margin-bottom:8px">Resultados del participante</p>
+      </div>
+      <div class="timeout-msg" id="timeoutMsg">⏰ ¡Se agotó el tiempo! El juego terminó automáticamente.</div>
+
+      <div class="stats">
+        <div class="stat score"><div class="n" id="rScore">0</div><div class="t">Puntaje total</div></div>
+        <div class="stat good"><div class="n" id="rCorrect">0</div><div class="t">✅ Correctas</div></div>
+        <div class="stat bad"><div class="n" id="rWrong">0</div><div class="t">❌ Incorrectas</div></div>
+        <div class="stat pct"><div class="n" id="rPct">0%</div><div class="t">Porcentaje de aciertos</div></div>
+        <div class="stat"><div class="n" id="rTime">00:00</div><div class="t">⏱️ Tiempo empleado</div></div>
+      </div>
+      <p id="rUnanswered" style="text-align:center;color:var(--muted);margin:-8px 0 14px;display:none"></p>
+
+      <div class="motiv" id="rMessage"></div>
+
+      <div class="register" id="registerBox">
+        <label for="nameInput">✍️ Escribe tu nombre completo para registrar tu resultado (obligatorio):</label>
+        <input type="text" id="nameInput" maxlength="80" placeholder="Ej. Profra. María Fernanda López García" autocomplete="off">
+        <div class="err" id="nameErr"></div>
+        <div class="btns" style="margin-top:12px">
+          <button class="btn success" id="saveBtn">💾 Guardar y ver ranking</button>
+        </div>
+        <div class="saved-note" id="savedNote">✅ Resultado registrado correctamente.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PANTALLA 4: RANKING TOP 10
+       ============================================================ -->
+  <section id="screen-ranking" class="screen">
+    <div class="card">
+      <h2 style="text-align:center">🏆 Ranking TOP 10</h2>
+      <p style="text-align:center;color:var(--muted);margin-bottom:16px" id="rankInfo"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Lugar</th><th>Docente</th><th>Puntaje</th><th>Correctas</th><th>Tiempo</th><th>Fecha y hora</th></tr>
+          </thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+      <p class="tiebreak">En caso de empate en puntaje, se ubica primero a quien terminó en menor tiempo.</p>
+
+      <div class="btns">
+        <button class="btn success" id="exportBtn">📊 Exportar a Excel (CSV)</button>
+        <button class="btn primary" id="restartBtn">🔄 Reiniciar juego</button>
+        <button class="btn danger" id="clearBtn">🗑️ Borrar historial</button>
+      </div>
+      <div class="btns">
+        <button class="btn" id="toReflectBtn">💭 Continuar a la reflexión final ➜</button>
+        <button class="btn ghost" id="homeFromRanking">🏠 Inicio</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PANTALLA 5: REFLEXIÓN FINAL
+       ============================================================ -->
+  <section id="screen-reflect" class="screen">
+    <div class="card reflect">
+      <div class="logo" style="font-size:3.4rem">💭</div>
+      <h2>Reflexión final</h2>
+      <div class="big-q">“Como docentes, ¿estamos enseñando a nuestros alumnos a utilizar la tecnología o simplemente estamos permitiendo que la tecnología los utilice a ellos?”</div>
+      <p class="final">“El reto no es evitar la tecnología, sino aprender a utilizarla de manera inteligente, crítica y responsable”.</p>
+      <div class="btns">
+        <button class="btn primary big" id="playAgainBtn">🔄 Jugar de nuevo</button>
+        <button class="btn ghost" id="rankingFromReflect">🏆 Ver ranking</button>
+        <button class="btn ghost" id="homeFromReflect">🏠 Inicio</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>RETO DIGITAL DOCENTE · Consejo Técnico Escolar · Hecho por Ing. Richie</footer>
+</div>
+
+<!-- Modal de confirmación para borrar historial -->
+<div class="modal" id="confirmModal">
+  <div class="card">
+    <div style="font-size:3rem">⚠️</div>
+    <h2 style="color:var(--bad);margin-bottom:4px">¿Borrar historial?</h2>
+    <p>Se eliminarán <b>todos</b> los resultados guardados del ranking en este navegador. Esta acción no se puede deshacer.</p>
+    <p style="color:var(--muted);font-size:.9rem">Sugerencia: exporta primero el CSV si deseas conservar los datos.</p>
+    <div class="btns">
+      <button class="btn ghost" id="cancelClear">Cancelar</button>
+      <button class="btn danger" id="confirmClear">Sí, borrar todo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN GENERAL
+   ===================================================================== */
+const TOTAL_QUESTIONS = 15;     // preguntas por partida
+const PER_BLOCK       = 5;      // preguntas por bloque (3 bloques x 5 = 15)
+const TIME_LIMIT      = 300;    // 5 minutos en segundos
+const POINTS          = 100;    // puntos por respuesta correcta
+const KEY_RECORDS     = "retoDigitalDocente_ranking_v1";   // historial
+const KEY_PENDING     = "retoDigitalDocente_pendiente_v1"; // última partida (evita duplicados)
+
+const BLOCKS = {
+  1: { name: "Bloque 1 · Uso de pantallas",         icon: "📱", cls: "b1" },
+  2: { name: "Bloque 2 · Redes sociales",           icon: "🌐", cls: "b2" },
+  3: { name: "Bloque 3 · Inteligencia artificial",  icon: "🤖", cls: "b3" }
+};
+
+/* =====================================================================
+   BANCO DE PREGUNTAS
+   b = bloque, t = tema, q = pregunta,
+   o = opciones (LA PRIMERA ES LA CORRECTA; se mezclan al mostrarse),
+   e = explicación educativa
+   ===================================================================== */
+const BANK = [
+  /* ---------------- BLOQUE 1: USO DE PANTALLAS ---------------- */
+  { b:1, t:"Beneficios", q:"¿Cuál es un beneficio pedagógico real del uso de pantallas en el aula?",
+    o:["Acceder a recursos multimedia que facilitan la comprensión de conceptos complejos",
+       "Sustituir por completo la explicación y el acompañamiento del docente",
+       "Mantener a los alumnos ocupados aunque no haya un objetivo de aprendizaje",
+       "Eliminar la necesidad de que los alumnos lean textos"],
+    e:"Videos, simuladores y animaciones ayudan a visualizar procesos difíciles. Su valor depende de que el docente los integre con una intención pedagógica clara." },
+  { b:1, t:"Beneficios", q:"¿Qué característica distingue un uso educativo de las pantallas?",
+    o:["Un uso activo y con propósito: investigar, crear y resolver problemas",
+       "Un uso pasivo, viendo contenido sin interrupción",
+       "Usarlas el mayor tiempo posible durante la jornada",
+       "Usarlas solo como premio por buen comportamiento"],
+    e:"El aprendizaje se fortalece cuando el alumno produce, analiza y colabora con la tecnología, no cuando solo consume contenido." },
+  { b:1, t:"Uso excesivo", q:"¿Cuál es una consecuencia frecuente del uso excesivo de pantallas en niños y adolescentes?",
+    o:["Alteraciones del sueño y dificultades para mantener la atención",
+       "Mejora automática de la memoria a largo plazo",
+       "Aumento de la actividad física diaria",
+       "Mayor tolerancia a la frustración"],
+    e:"El exceso de pantallas se asocia con dormir menos y peor, sedentarismo y menor capacidad de concentración sostenida." },
+  { b:1, t:"Uso excesivo", q:"¿Qué señal puede indicar un uso problemático de dispositivos en un alumno?",
+    o:["Irritabilidad o ansiedad cuando no puede usar el dispositivo",
+       "Usar la computadora para hacer una tarea asignada",
+       "Consultar un diccionario en línea",
+       "Participar en una videollamada escolar"],
+    e:"Cuando la falta del dispositivo genera malestar intenso o desplaza otras actividades importantes, conviene dialogar con el alumno y su familia." },
+  { b:1, t:"Uso excesivo", q:"Para reducir la fatiga visual, ¿qué recomienda la regla 20-20-20?",
+    o:["Cada 20 minutos, mirar a unos 6 metros de distancia durante 20 segundos",
+       "Usar la pantalla 20 horas a la semana como máximo",
+       "Subir el brillo al 20% y alejarse 20 cm",
+       "Descansar 20 minutos por cada 20 segundos de uso"],
+    e:"Esta pausa breve relaja los músculos oculares. Es un hábito sencillo que docentes y alumnos pueden aplicar en clase." },
+  { b:1, t:"Límites", q:"¿Por qué es importante establecer límites en el uso de pantallas?",
+    o:["Para favorecer hábitos saludables y equilibrar tecnología con otras actividades",
+       "Para prohibir definitivamente la tecnología en la escuela",
+       "Porque toda la tecnología es dañina para el aprendizaje",
+       "Para castigar a los alumnos que usan dispositivos"],
+    e:"Los límites no buscan prohibir, sino enseñar autorregulación: cuándo, cuánto y para qué usar los dispositivos." },
+  { b:1, t:"Límites", q:"¿Qué recomendación favorece un mejor descanso de los alumnos?",
+    o:["Evitar las pantallas al menos una hora antes de dormir",
+       "Dormir con el celular encendido cerca de la almohada",
+       "Ver videos hasta quedarse dormido",
+       "Usar el dispositivo con el brillo al máximo por la noche"],
+    e:"La luz de las pantallas y la estimulación del contenido retrasan el sueño. Un tiempo sin dispositivos antes de dormir mejora el descanso." },
+  { b:1, t:"Equilibrio y convivencia", q:"¿Qué práctica favorece el equilibrio entre tecnología y convivencia?",
+    o:["Establecer momentos sin dispositivos para dialogar, jugar y convivir",
+       "Permitir el celular durante todos los recreos y comidas",
+       "Comunicarse con los compañeros solo por mensajes",
+       "Sustituir las actividades al aire libre por videojuegos"],
+    e:"La convivencia cara a cara desarrolla empatía y habilidades socioemocionales que la pantalla no reemplaza." },
+  { b:1, t:"Equilibrio y convivencia", q:"Como docentes, ¿cuál es la mejor forma de promover un uso equilibrado de la tecnología?",
+    o:["Ser ejemplo: evitar revisar el celular personal durante la clase",
+       "Exigir a los alumnos lo que nosotros no practicamos",
+       "Dejar que cada quien use el dispositivo como quiera",
+       "Usar el celular para vigilar a los alumnos en todo momento"],
+    e:"Los alumnos aprenden más de lo que ven que de lo que se les dice. El modelado docente es una de las estrategias más poderosas." },
+  { b:1, t:"Beneficios", q:"En el aula, la tecnología debe considerarse principalmente como...",
+    o:["Un medio para alcanzar aprendizajes, no un fin en sí misma",
+       "El objetivo principal de todas las clases",
+       "Un sustituto del libro de texto y del docente",
+       "Un entretenimiento para los tiempos muertos"],
+    e:"Primero se define el aprendizaje esperado y después se elige la herramienta que mejor lo apoye." },
+
+  /* ---------------- BLOQUE 2: REDES SOCIALES ---------------- */
+  { b:2, t:"Ciberacoso", q:"¿Qué es el ciberacoso?",
+    o:["Conductas repetidas de hostigamiento, burla o humillación a través de medios digitales",
+       "Una discusión aislada de opiniones en un foro",
+       "Bloquear a una persona que nos molesta",
+       "Recibir publicidad en redes sociales"],
+    e:"El ciberacoso es intencional y repetido; puede ocurrir a cualquier hora y difundirse rápidamente, lo que aumenta su impacto." },
+  { b:2, t:"Ciberacoso", q:"Si un alumno te informa que sufre ciberacoso, ¿qué es lo más adecuado?",
+    o:["Escucharlo, conservar evidencias, activar el protocolo escolar e informar a la familia",
+       "Decirle que lo ignore porque solo es internet",
+       "Pedirle que responda con insultos para defenderse",
+       "Publicar el caso en redes para exhibir a los agresores"],
+    e:"Escuchar sin juzgar, documentar (capturas) y seguir el protocolo institucional protege al alumno y permite intervenir correctamente." },
+  { b:2, t:"Noticias falsas", q:"¿Cuál es la mejor forma de identificar una posible noticia falsa?",
+    o:["Verificar la fuente, la fecha y contrastarla con medios confiables",
+       "Creerla si tiene muchos 'me gusta'",
+       "Compartirla rápido para que otros la revisen",
+       "Confiar en ella si el titular es muy impactante"],
+    e:"La popularidad no es sinónimo de veracidad. Contrastar con varias fuentes confiables es la clave para no difundir desinformación." },
+  { b:2, t:"Noticias falsas", q:"¿Por qué las noticias falsas se difunden con tanta rapidez?",
+    o:["Porque apelan a emociones fuertes y se comparten sin verificar",
+       "Porque siempre provienen de fuentes oficiales",
+       "Porque las redes sociales las eliminan automáticamente",
+       "Porque son más largas y detalladas que las reales"],
+    e:"El miedo, el enojo o la sorpresa impulsan a compartir sin pensar. Hacer una pausa antes de reenviar es un hábito que debemos enseñar." },
+  { b:2, t:"Datos personales", q:"¿Cuál de estos datos NO debería publicar un alumno en redes sociales?",
+    o:["Su domicilio y los horarios en que sale de casa",
+       "Su opinión sobre un libro que leyó",
+       "Un dibujo hecho en clase sin datos personales",
+       "El nombre de su película favorita"],
+    e:"La dirección, ubicación en tiempo real y rutinas pueden poner en riesgo la seguridad. Son datos que deben protegerse." },
+  { b:2, t:"Datos personales", q:"¿Cuál es una buena práctica para proteger las cuentas digitales?",
+    o:["Usar contraseñas largas y distintas, y activar la verificación en dos pasos",
+       "Usar la misma contraseña sencilla en todas las cuentas",
+       "Compartir la contraseña con los amigos de confianza",
+       "Anotar la contraseña en la descripción del perfil"],
+    e:"Contraseñas únicas y robustas, junto con la verificación en dos pasos, reducen mucho el riesgo de robo de cuentas." },
+  { b:2, t:"Datos personales", q:"Antes de publicar fotos de los alumnos en redes de la escuela, el docente debe...",
+    o:["Contar con el consentimiento de madres, padres o tutores y seguir las normas escolares",
+       "Publicarlas libremente si son de una actividad escolar",
+       "Etiquetar a cada alumno con su nombre completo",
+       "Pedir permiso solo a los alumnos, sin avisar a las familias"],
+    e:"La imagen de niñas, niños y adolescentes es un dato personal protegido. El consentimiento y el cuidado de su privacidad son indispensables." },
+  { b:2, t:"Pensamiento crítico", q:"Ante una publicación viral, ¿qué pregunta refleja pensamiento crítico?",
+    o:["¿Quién lo publica, con qué intención y qué evidencia presenta?",
+       "¿Cuántas personas ya lo compartieron?",
+       "¿Lo compartió alguien que me cae bien?",
+       "¿Tiene imágenes llamativas?"],
+    e:"Analizar el origen, el propósito y la evidencia ayuda a distinguir información confiable de manipulación." },
+  { b:2, t:"Pensamiento crítico", q:"¿Qué es una 'burbuja de filtro' en redes sociales?",
+    o:["Cuando los algoritmos nos muestran contenido parecido a lo que ya pensamos, limitando otros puntos de vista",
+       "Un filtro para mejorar la apariencia de las fotos",
+       "Un sistema que bloquea todas las noticias falsas",
+       "Una configuración de privacidad para ocultar el perfil"],
+    e:"Los algoritmos priorizan lo que nos mantiene conectados. Buscar fuentes diversas ayuda a tener una visión más completa." },
+  { b:2, t:"Uso responsable", q:"¿Qué es la huella digital?",
+    o:["El rastro de información que dejamos en internet y que puede permanecer por mucho tiempo",
+       "El sistema para desbloquear el celular con el dedo",
+       "Una aplicación para borrar publicaciones",
+       "El número de seguidores de una cuenta"],
+    e:"Lo que publicamos puede ser copiado y recuperado años después, influyendo en nuestra reputación personal y profesional." },
+
+  /* ---------------- BLOQUE 3: INTELIGENCIA ARTIFICIAL ---------------- */
+  { b:3, t:"Aplicaciones educativas", q:"¿Cuál es un uso educativo adecuado de ChatGPT u otras herramientas de IA para el docente?",
+    o:["Generar ideas para planeaciones, ejemplos o rúbricas que el docente revisa y adapta",
+       "Copiar sin revisión cualquier respuesta y entregarla como planeación final",
+       "Delegar en la IA la evaluación completa de los alumnos sin supervisión",
+       "Reemplazar la observación directa del grupo"],
+    e:"La IA es un buen punto de partida, pero el docente conoce a su grupo y es quien valida, ajusta y contextualiza lo generado." },
+  { b:3, t:"Aplicaciones educativas", q:"¿Cuál de estas actividades puede apoyarse con herramientas de IA en el aula?",
+    o:["Crear ejemplos, resúmenes o ejercicios adaptados a distintos niveles de dificultad",
+       "Sustituir la convivencia y el trabajo colaborativo",
+       "Decidir de forma automática quién aprueba y quién no",
+       "Evitar que los alumnos lean y escriban"],
+    e:"La IA puede ayudar a diversificar materiales y atender distintos ritmos de aprendizaje, siempre con revisión docente." },
+  { b:3, t:"Ventajas para docentes", q:"¿Cuál es una ventaja de la IA para los docentes?",
+    o:["Ahorrar tiempo en tareas repetitivas para dedicarlo al acompañamiento de los alumnos",
+       "Eliminar la necesidad de preparar las clases",
+       "Garantizar que toda la información sea correcta",
+       "Sustituir la relación humana con los estudiantes"],
+    e:"Al automatizar borradores, formatos o ideas iniciales, el docente gana tiempo para lo más valioso: enseñar y acompañar." },
+  { b:3, t:"Ventajas para docentes", q:"¿La inteligencia artificial reemplazará al docente?",
+    o:["No; es una herramienta de apoyo, y el juicio pedagógico y el vínculo humano son insustituibles",
+       "Sí, en pocos años no se necesitarán maestros",
+       "Sí, porque la IA nunca se equivoca",
+       "No, porque la IA no sirve para nada en educación"],
+    e:"La IA puede apoyar, pero motivar, contener emocionalmente, orientar y formar en valores siguen siendo tareas profundamente humanas." },
+  { b:3, t:"Riesgos de copiar", q:"¿Cuál es el principal riesgo de que un alumno copie tareas generadas por IA?",
+    o:["No desarrolla el aprendizaje ni las habilidades que la tarea buscaba fortalecer",
+       "Que la tarea quede demasiado bien redactada",
+       "Que termine más rápido y tenga tiempo libre",
+       "Ninguno, porque la IA siempre tiene razón"],
+    e:"El propósito de una tarea es el proceso de pensar. Si la IA lo hace todo, el alumno pierde la oportunidad de aprender." },
+  { b:3, t:"Riesgos de copiar", q:"¿Qué estrategia ayuda a reducir la copia de tareas hechas con IA?",
+    o:["Diseñar actividades que valoren el proceso, la reflexión personal y la argumentación oral",
+       "Dejar solo cuestionarios de respuestas memorizadas",
+       "Prohibir cualquier tarea para la casa",
+       "Calificar únicamente la presentación del trabajo"],
+    e:"Bitácoras, borradores, exposiciones y preguntas sobre la experiencia propia hacen visible el pensamiento del alumno." },
+  { b:3, t:"Verificación", q:"¿Qué son las 'alucinaciones' de la inteligencia artificial?",
+    o:["Respuestas falsas o inventadas que la IA presenta con apariencia convincente",
+       "Imágenes artísticas creadas por la IA",
+       "Errores de conexión a internet",
+       "Funciones especiales para la creatividad"],
+    e:"La IA puede inventar datos, citas o fuentes. Por eso nunca debe tomarse su respuesta como verdad absoluta." },
+  { b:3, t:"Verificación", q:"Antes de usar en clase información generada por IA, ¿qué se debe hacer?",
+    o:["Contrastarla con fuentes confiables como libros, sitios oficiales o especialistas",
+       "Usarla directamente porque la IA consulta todo internet",
+       "Preguntar lo mismo dos veces y quedarse con la respuesta más larga",
+       "Confiar en ella si está bien redactada"],
+    e:"Una buena redacción no garantiza exactitud. Verificar es una responsabilidad profesional del docente." },
+  { b:3, t:"Uso ético", q:"¿Cuál es una práctica de uso ético de la IA?",
+    o:["Transparentar cuándo se usó IA y no presentarla como trabajo totalmente propio",
+       "Ocultar siempre que se usó para obtener mejor calificación",
+       "Usarla para suplantar la identidad de otra persona",
+       "Generar imágenes falsas de compañeros como broma"],
+    e:"La honestidad académica incluye reconocer las herramientas utilizadas. Esto también se debe enseñar a los alumnos." },
+  { b:3, t:"Uso ético", q:"¿Qué información NO debe ingresarse en herramientas de IA públicas?",
+    o:["Datos personales sensibles de los alumnos, como nombres completos, diagnósticos o domicilios",
+       "Un tema general para preparar una clase",
+       "Una pregunta sobre un hecho histórico",
+       "Una solicitud de ideas para una dinámica grupal"],
+    e:"Lo que escribimos en estas herramientas puede almacenarse. Proteger la privacidad de los alumnos es una obligación." },
+  { b:3, t:"Pensamiento crítico", q:"¿Por qué la IA puede presentar sesgos en sus respuestas?",
+    o:["Porque aprende de datos creados por personas, que pueden contener prejuicios",
+       "Porque tiene opiniones políticas propias",
+       "Porque siempre favorece a quien la usa",
+       "La IA nunca presenta sesgos"],
+    e:"Si los datos de entrenamiento contienen estereotipos, la IA puede reproducirlos. Analizarlo críticamente es parte de la alfabetización digital." },
+  { b:3, t:"Pensamiento crítico", q:"Frente a la IA, ¿cuál es el papel más importante del docente?",
+    o:["Enseñar a formular buenas preguntas y a evaluar críticamente las respuestas",
+       "Prohibir la IA para que los alumnos no la conozcan",
+       "Dejar que los alumnos la usen sin orientación",
+       "Usar la IA para no tener que explicar los temas"],
+    e:"Formar usuarios críticos implica enseñar a preguntar, contrastar, cuestionar y decidir con criterio propio." }
+];
+
+/* =====================================================================
+   ALMACENAMIENTO SEGURO (localStorage con respaldo en memoria)
+   ===================================================================== */
+const memoryStore = {};
+const storage = {
+  get(key){
+    try { return localStorage.getItem(key); }
+    catch(e){ return key in memoryStore ? memoryStore[key] : null; }
+  },
+  set(key, value){
+    try { localStorage.setItem(key, value); }
+    catch(e){ memoryStore[key] = value; }
+  },
+  remove(key){
+    try { localStorage.removeItem(key); }
+    catch(e){ delete memoryStore[key]; }
+  }
+};
+
+/** Lee el historial completo de participantes */
+function loadRecords(){
+  try {
+    const data = JSON.parse(storage.get(KEY_RECORDS) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch(e){ return []; }
+}
+/** Guarda el historial completo */
+function saveRecords(records){ storage.set(KEY_RECORDS, JSON.stringify(records)); }
+
+/** Partida pendiente de registrar (permite recuperar tras recargar y evita duplicados) */
+function loadPending(){
+  try { return JSON.parse(storage.get(KEY_PENDING) || "null"); }
+  catch(e){ return null; }
+}
+function savePending(p){ storage.set(KEY_PENDING, JSON.stringify(p)); }
+
+/* =====================================================================
+   UTILIDADES
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+
+/** Mezcla un arreglo (algoritmo Fisher-Yates) y devuelve una copia */
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+/** Convierte segundos a formato mm:ss */
+function fmtTime(sec){
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
+/** Fecha legible en español de México */
+function fmtDate(iso){
+  try {
+    return new Date(iso).toLocaleString("es-MX", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  } catch(e){ return iso; }
+}
+/** Escapa texto para insertarlo de forma segura en HTML */
+function escapeHTML(str){
+  return String(str).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+/** Genera un identificador único para cada partida */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/** Muestra una notificación breve */
+let toastTimer = null;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+/** Cambia de pantalla */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* =====================================================================
+   ESTADO DEL JUEGO
+   ===================================================================== */
+const state = {
+  questions: [],      // 15 preguntas de la partida
+  index: 0,           // pregunta actual
+  score: 0,
+  correct: 0,
+  answered: 0,        // preguntas respondidas
+  startTime: 0,
+  timerId: null,
+  answeredCurrent: false,
+  finished: false
+};
+
+/** Selecciona 5 preguntas aleatorias de cada bloque y mezcla sus opciones */
+function buildQuestions(){
+  let selected = [];
+  [1, 2, 3].forEach(b => {
+    selected = selected.concat(shuffle(BANK.filter(q => q.b === b)).slice(0, PER_BLOCK));
+  });
+  selected = shuffle(selected).slice(0, TOTAL_QUESTIONS);
+  return selected.map(q => ({
+    ...q,
+    options: shuffle(q.o.map((text, i) => ({ text, ok: i === 0 })))
+  }));
+}
+
+/* =====================================================================
+   INICIO DE PARTIDA
+   ===================================================================== */
+function startGame(){
+  // Si había una partida pendiente sin registrar, se descarta al iniciar una nueva
+  const p = loadPending();
+  if (p && !p.saved) storage.remove(KEY_PENDING);
+
+  state.questions = buildQuestions();
+  state.index = 0;
+  state.score = 0;
+  state.correct = 0;
+  state.answered = 0;
+  state.finished = false;
+  state.answeredCurrent = false;
+  state.startTime = Date.now();
+
+  $("scoreLive").textContent = "0";
+  $("timer").textContent = fmtTime(TIME_LIMIT);
+  $("timer").classList.remove("low");
+
+  showScreen("screen-game");
+  renderQuestion();
+  startTimer();
+}
+
+/* =====================================================================
+   CRONÓMETRO GENERAL (5 minutos)
+   Se calcula con la hora real para evitar desfases.
+   ===================================================================== */
+function startTimer(){
+  clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const left = TIME_LIMIT - elapsed;
+    $("timer").textContent = fmtTime(Math.ceil(left));
+    $("timer").classList.toggle("low", left <= 60);
+    if (left <= 0){
+      $("timer").textContent = "00:00";
+      finishGame(true);          // fin automático por tiempo
+    }
+  }, 250);
+}
+
+/* =====================================================================
+   MOSTRAR PREGUNTA
+   ===================================================================== */
+function renderQuestion(){
+  const q = state.questions[state.index];
+  const block = BLOCKS[q.b];
+  state.answeredCurrent = false;
+
+  $("qCounter").textContent = `${state.index + 1} de ${TOTAL_QUESTIONS}`;
+  $("progressFill").style.width = (state.index / TOTAL_QUESTIONS * 100) + "%";
+
+  const chip = $("qBlock");
+  chip.className = "chip " + block.cls;
+  chip.textContent = block.icon + " " + block.name;
+  $("qTopic").textContent = "🏷️ " + q.t;
+  $("qText").textContent = q.q;
+
+  const box = $("options");
+  box.innerHTML = "";
+  const letters = ["A", "B", "C", "D"];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "opt";
+    btn.type = "button";
+    btn.innerHTML = `<span class="letter">${letters[i]}</span><span></span>`;
+    btn.lastChild.textContent = opt.text;
+    btn.addEventListener("click", () => answer(i));
+    box.appendChild(btn);
+  });
+
+  $("feedback").className = "feedback";
+  $("nextBtn").style.display = "none";
+}
+
+/* =====================================================================
+   RESPONDER
+   ===================================================================== */
+function answer(i){
+  if (state.answeredCurrent || state.finished) return;
+  state.answeredCurrent = true;
+  state.answered++;
+
+  const q = state.questions[state.index];
+  const chosen = q.options[i];
+  const buttons = $("options").querySelectorAll(".opt");
+
+  // Marcar opciones
+  buttons.forEach((b, idx) => {
+    b.disabled = true;
+    if (q.options[idx].ok) b.classList.add("correct");
+    else if (idx === i) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+
+  // Puntuación y retroalimentación
+  const fb = $("feedback");
+  if (chosen.ok){
+    state.score += POINTS;
+    state.correct++;
+    fb.className = "feedback show ok";
+    $("fbTitle").textContent = "✅ ¡Correcto! +100 puntos";
+  } else {
+    fb.className = "feedback show bad";
+    $("fbTitle").textContent = "❌ Incorrecto. La respuesta correcta está marcada en verde.";
+  }
+  $("fbExp").textContent = "💡 " + q.e;
+  $("scoreLive").textContent = state.score;
+  $("progressFill").style.width = ((state.index + 1) / TOTAL_QUESTIONS * 100) + "%";
+
+  // Botón para avanzar
+  const next = $("nextBtn");
+  next.textContent = state.index + 1 < TOTAL_QUESTIONS ? "Siguiente pregunta ➜" : "🏁 Ver resultados";
+  next.style.display = "inline-flex";
+  next.focus({ preventScroll: true });
+}
+
+/** Avanza a la siguiente pregunta o termina el juego */
+function nextQuestion(){
+  if (state.finished) return;
+  if (!state.answeredCurrent) return;
+  state.index++;
+  if (state.index >= TOTAL_QUESTIONS) finishGame(false);
+  else renderQuestion();
+}
+
+/* =====================================================================
+   FIN DEL JUEGO
+   ===================================================================== */
+function finishGame(byTimeout){
+  if (state.finished) return;
+  state.finished = true;
+  clearInterval(state.timerId);
+
+  const timeUsed = Math.min(TIME_LIMIT, Math.round((Date.now() - state.startTime) / 1000));
+  const incorrect = TOTAL_QUESTIONS - state.correct;          // incluye no respondidas
+  const unanswered = TOTAL_QUESTIONS - state.answered;
+
+  // Se guarda la partida como "pendiente" con un ID único:
+  // si se recarga la página, se recupera la misma partida y no se duplica el registro.
+  const pending = {
+    id: uid(),
+    score: state.score,
+    correct: state.correct,
+    incorrect,
+    unanswered,
+    percent: Math.round(state.correct / TOTAL_QUESTIONS * 100),
+    timeUsed,
+    timeout: byTimeout,
+    saved: false
+  };
+  savePending(pending);
+  showResults(pending);
+}
+
+/** Mensaje motivador según el desempeño */
+function motivationalMessage(pct){
+  if (pct >= 90) return { icon:"🏆", text:"¡Excelente! Eres un referente en ciudadanía digital. Tu dominio del tema puede inspirar a todo tu colectivo docente." };
+  if (pct >= 70) return { icon:"🌟", text:"¡Muy bien! Tienes una visión sólida sobre el uso responsable de la tecnología. Sigue fortaleciéndola y compártela con tus alumnos." };
+  if (pct >= 50) return { icon:"👍", text:"¡Buen trabajo! Vas por buen camino. Revisar las explicaciones te ayudará a reforzar algunos temas clave." };
+  return { icon:"💪", text:"¡Gracias por participar! Cada reto es una oportunidad para aprender. La formación digital es un camino que recorremos juntos." };
+}
+
+/* =====================================================================
+   PANTALLA DE RESULTADOS
+   ===================================================================== */
+function showResults(p){
+  $("rScore").textContent = p.score;
+  $("rCorrect").textContent = p.correct;
+  $("rWrong").textContent = p.incorrect;
+  $("rPct").textContent = p.percent + "%";
+  $("rTime").textContent = fmtTime(p.timeUsed);
+  $("timeoutMsg").style.display = p.timeout ? "block" : "none";
+
+  const un = $("rUnanswered");
+  if (p.unanswered > 0){
+    un.style.display = "block";
+    un.textContent = `(${p.unanswered} pregunta(s) sin responder se cuentan como incorrectas)`;
+  } else un.style.display = "none";
+
+  const m = motivationalMessage(p.percent);
+  $("resultIcon").textContent = m.icon;
+  $("rMessage").textContent = m.text;
+
+  // Estado del registro
+  const input = $("nameInput");
+  input.value = "";
+  input.classList.remove("error");
+  $("nameErr").textContent = "";
+  const alreadySaved = p.saved || loadRecords().some(r => r.id === p.id);
+  input.disabled = alreadySaved;
+  $("saveBtn").disabled = alreadySaved;
+  $("savedNote").style.display = alreadySaved ? "block" : "none";
+  $("saveBtn").innerHTML = alreadySaved ? "🏆 Ver ranking" : "💾 Guardar y ver ranking";
+  if (alreadySaved) $("saveBtn").disabled = false;
+
+  showScreen("screen-results");
+  if (!alreadySaved) setTimeout(() => input.focus({ preventScroll: true }), 400);
+}
+
+/* =====================================================================
+   REGISTRO DEL PARTICIPANTE
+   ===================================================================== */
+function saveResult(){
+  const p = loadPending();
+  if (!p){ toast("No hay una partida para registrar."); showRanking(); return; }
+
+  const records = loadRecords();
+
+  // Evitar duplicados: si esta partida ya fue registrada, solo mostrar el ranking
+  if (p.saved || records.some(r => r.id === p.id)){
+    showRanking(p.id);
+    return;
+  }
+
+  // Validación obligatoria del nombre completo
+  const input = $("nameInput");
+  const name = input.value.trim().replace(/\s+/g, " ");
+  if (name.length < 5 || name.split(" ").length < 2){
+    input.classList.add("error");
+    $("nameErr").textContent = "⚠️ Escribe tu nombre completo (nombre y al menos un apellido).";
+    input.focus();
+    return;
+  }
+
+  const record = {
+    id: p.id,
+    nombre: name,
+    puntaje: p.score,
+    correctas: p.correct,
+    incorrectas: p.incorrect,
+    porcentaje: p.percent,
+    tiempo: p.timeUsed,
+    fecha: new Date().toISOString()
+  };
+  records.push(record);
+  saveRecords(records);
+
+  p.saved = true;
+  savePending(p);
+
+  toast("✅ Resultado de " + name + " guardado.");
+  showRanking(p.id);
+}
+
+/* =====================================================================
+   RANKING TOP 10
+   Orden: mayor puntaje; empate → menor tiempo; luego quien jugó primero.
+   ===================================================================== */
+function sortedRecords(){
+  return loadRecords().slice().sort((a, b) =>
+    (b.puntaje - a.puntaje) ||
+    (a.tiempo - b.tiempo) ||
+    (new Date(a.fecha) - new Date(b.fecha))
+  );
+}
+
+function showRanking(highlightId){
+  const all = sortedRecords();
+  const top = all.slice(0, 10);
+  const body = $("rankBody");
+
+  if (!top.length){
+    body.innerHTML = `<tr><td colspan="6" class="empty">📭 Aún no hay participantes registrados. ¡Sé el primero en jugar!</td></tr>`;
+  } else {
+    const medals = ["🥇", "🥈", "🥉"];
+    body.innerHTML = top.map((r, i) => {
+      const cls = [i < 3 ? "r" + (i + 1) : "", r.id === highlightId ? "me" : ""].join(" ").trim();
+      const pos = i < 3 ? `<span class="medal">${medals[i]}</span>` : `${i + 1}°`;
+      return `<tr class="${cls}">
+        <td class="pos">${pos}</td>
+        <td>${escapeHTML(r.nombre)}</td>
+        <td><b>${r.puntaje}</b></td>
+        <td>${r.correctas} / ${TOTAL_QUESTIONS}</td>
+        <td>${fmtTime(r.tiempo)}</td>
+        <td>${fmtDate(r.fecha)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Información adicional
+  let info = `Total de participantes registrados: ${all.length}`;
+  if (highlightId){
+    const pos = all.findIndex(r => r.id === highlightId);
+    if (pos >= 0) info += ` · Tu posición: ${pos + 1}°` + (pos >= 10 ? " (fuera del TOP 10)" : "");
+  }
+  $("rankInfo").textContent = info;
+
+  showScreen("screen-ranking");
+}
+
+/* =====================================================================
+   EXPORTAR A CSV (compatible con Excel, con acentos)
+   ===================================================================== */
+function exportCSV(){
+  const all = sortedRecords();
+  if (!all.length){ toast("📭 No hay resultados para exportar."); return; }
+
+  const cell = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+  const header = ["Posición", "Nombre del docente", "Puntaje", "Correctas", "Incorrectas", "Porcentaje de aciertos", "Tiempo (mm:ss)", "Fecha y hora"];
+  const rows = all.map((r, i) => [
+    i + 1, r.nombre, r.puntaje, r.correctas, r.incorrectas, r.porcentaje + "%", fmtTime(r.tiempo), fmtDate(r.fecha)
+  ]);
+  const csv = [header, ...rows].map(row => row.map(cell).join(",")).join("\r\n");
+
+  // El BOM (\uFEFF) hace que Excel reconozca correctamente los acentos y la ñ
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  a.href = url;
+  a.download = `Resultados_Reto_Digital_Docente_${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  toast("📊 Archivo CSV descargado (" + all.length + " registros).");
+}
+
+/* =====================================================================
+   BORRAR HISTORIAL (con confirmación)
+   ===================================================================== */
+function openClearModal(){ $("confirmModal").classList.add("show"); }
+function closeClearModal(){ $("confirmModal").classList.remove("show"); }
+function clearHistory(){
+  storage.remove(KEY_RECORDS);
+  closeClearModal();
+  toast("🗑️ Historial borrado.");
+  showRanking();
+}
+
+/* =====================================================================
+   REINICIAR (sin borrar el ranking)
+   ===================================================================== */
+function restartGame(){
+  clearInterval(state.timerId);
+  startGame();
+}
+function goHome(){
+  clearInterval(state.timerId);
+  state.finished = true;
+  showScreen("screen-start");
+}
+
+/* =====================================================================
+   EVENTOS DE BOTONES
+   ===================================================================== */
+$("startBtn").addEventListener("click", startGame);
+$("rankingFromStart").addEventListener("click", () => showRanking());
+$("nextBtn").addEventListener("click", nextQuestion);
+$("saveBtn").addEventListener("click", saveResult);
+$("nameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveResult(); });
+$("nameInput").addEventListener("input", () => { $("nameInput").classList.remove("error"); $("nameErr").textContent = ""; });
+$("exportBtn").addEventListener("click", exportCSV);
+$("restartBtn").addEventListener("click", restartGame);
+$("clearBtn").addEventListener("click", openClearModal);
+$("cancelClear").addEventListener("click", closeClearModal);
+$("confirmClear").addEventListener("click", clearHistory);
+$("confirmModal").addEventListener("click", (e) => { if (e.target.id === "confirmModal") closeClearModal(); });
+$("toReflectBtn").addEventListener("click", () => showScreen("screen-reflect"));
+$("homeFromRanking").addEventListener("click", goHome);
+$("playAgainBtn").addEventListener("click", restartGame);
+$("rankingFromReflect").addEventListener("click", () => showRanking());
+$("homeFromReflect").addEventListener("click", goHome);
+
+// Atajos de teclado durante el juego: 1-4 o A-D para responder, Enter para avanzar
+document.addEventListener("keydown", (e) => {
+  if (!$("screen-game").classList.contains("active")) return;
+  const map = { "1":0, "2":1, "3":2, "4":3, "a":0, "b":1, "c":2, "d":3 };
+  const k = e.key.toLowerCase();
+  if (k in map && !state.answeredCurrent) answer(map[k]);
+  else if (e.key === "Enter" && state.answeredCurrent && document.activeElement !== $("nextBtn")) nextQuestion();
+});
+
+/* =====================================================================
+   AL CARGAR LA PÁGINA
+   Si se recargó estando en la pantalla de resultados sin registrar,
+   se recupera esa misma partida (mismo ID) para no perderla ni duplicarla.
+   ===================================================================== */
+(function init(){
+  const p = loadPending();
+  if (p && !p.saved){
+    showResults(p);
+    toast("Se recuperó tu última partida. Registra tu nombre para guardarla.");
+  }
+})();
+</script>
+</body>
+</html>
